@@ -7,6 +7,9 @@ struct BOARD {
 };
 
 struct BOARD *B;
+#define YOUR_TURN 0
+#define OPP_TURN 1
+
 
 void init_board() {
     int pieces[25] = {9, -9, 8, -8, 7, -7, 6, -6, 5, -5, 4, -4,
@@ -59,22 +62,66 @@ void print_board() {
         } else {
             printf("%3d|", B->piece[i]);
         }
-
+        if ((i + 1) % 5 == 0) {
+            printf(" %d", (i / 5) + 1);
+        }
         if (0 < i && i < 24 && (i + 1) % 5 == 0) {
-            printf("\n");
-            printf("|---+---+---+---+---|\n");
+            printf("\n|---+---+---+---+---|\n");
         }
     }
     printf("\n+-------------------+\n");
+    printf("  a   b   c   d   e\n\n");
+}
+
+int is_gameover() {
+    // tmp
+    return 0;
+}
+
+void print_result() {
+    // tmp
+    printf("you win");
 }
 
 int main() {
     B = malloc(sizeof(struct BOARD));
     init_board();
 
-    print_board();
+    printf("Input mode(1: vs COM): ");
+    int mode;
+    scanf("%d", &mode);
+    if (mode != 1) {
+        printf("BYE\n");
+        return 0;
+    }
 
-    printf("selecter position: %d\n", B->selecter_pos);
+    char turn = YOUR_TURN;
+
+    // 先手は横、後手は縦
+
+    while (1) {
+        print_board();
+
+        if (turn == YOUR_TURN) {
+            char move[2];
+            printf("move: ");
+            scanf("%s", move);
+
+            turn = OPP_TURN;
+        } else {
+            printf("COM move: %s\n", "XX");
+            turn = YOUR_TURN;
+        }
+
+        if (is_gameover()){
+            print_result();
+            break;
+        }
+    }
+
+
+
+
 
     return 0;
 }
