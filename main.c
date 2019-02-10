@@ -9,7 +9,7 @@ struct BOARD {
 struct BOARD *B;
 #define YOUR_TURN 0
 #define OPP_TURN 1
-
+#define CHOSED -10
 
 void init_board() {
     int pieces[25] = {9, -9, 8, -8, 7, -7, 6, -6, 5, -5, 4, -4,
@@ -59,7 +59,7 @@ void print_board() {
         int n = B->piece[i];
         if (n == 0) {
             printf("  X|");
-        } else if (n == -10) {
+        } else if (n == CHOSED) {
             printf("   |");
         } else {
             printf("%3d|", B->piece[i]);
@@ -101,23 +101,23 @@ int is_legal_move(char move[2], char turn) {
         return 0;
     }
 
-    int selecter_pos = B->selecter_pos;
-    int s_row = selecter_pos / 5;
-    int s_col = selecter_pos % 5;
+    int s_pos = B->selecter_pos;
+    int s_row = s_pos / 5;
+    int s_col = s_pos % 5;
 
-    int move_index = move2index(move);
-    int m_row = move_index / 5;
-    int m_col = move_index % 5;
+    int m_pos = move2index(move);
+    int m_row = m_pos / 5;
+    int m_col = m_pos % 5;
 
     if (turn == YOUR_TURN) {
         // allow only horizontal move
-        if (selecter_pos != move_index && s_row == m_row) {
+        if (s_pos != m_pos && s_row == m_row && B->piece[m_pos] != CHOSED) {
             return 1;
         }
         return 0;
     } else {
         // allow only vertical move
-        if (selecter_pos != move_index && s_col == m_col) {
+        if (s_pos != m_pos && s_col == m_col && B->piece[m_pos] != CHOSED) {
             return 1;
         }
         return 0;
@@ -144,7 +144,7 @@ int main() {
     char turn = YOUR_TURN;
 
     // 先手は横、後手は縦
-    int your_point = 0;
+    int you_point = 0;
     int opp_point = 0;
     while (1) {
         print_board();
@@ -157,6 +157,9 @@ int main() {
                 printf("invalid move, choose again: ");
                 scanf("%s", move);
             }
+            int m_pos = move2index(move);
+            you_point += B->piece[m_pos];
+            B->piece[m_pos] = CHOSED;
 
             turn = OPP_TURN;
         } else {
