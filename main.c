@@ -187,6 +187,8 @@ void print_result() {
     }
 }
 
+
+// min-max法を実装したい
 int get_COM_move() {
     int s_pos = B->selecter_pos;
     int s_row = s_pos / 5;
