@@ -170,8 +170,13 @@ int is_legal_move(char move[2]) {
 }
 
 void print_result() {
-    // tmp
-    printf("you win\n");
+    if (you_point > opp_point) {
+        printf("you win\n");
+    } else if (you_point < opp_point) {
+        printf("you lose\n");
+    } else {
+        printf("draw\n");
+    }
 }
 
 void next_state() {
