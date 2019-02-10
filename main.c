@@ -59,6 +59,8 @@ void print_board() {
         int n = B->piece[i];
         if (n == 0) {
             printf("  X|");
+        } else if (n == -10) {
+            printf("   |");
         } else {
             printf("%3d|", B->piece[i]);
         }
@@ -76,6 +78,50 @@ void print_board() {
 int is_gameover() {
     // tmp
     return 0;
+}
+
+int move2index(char move[2]) {
+    int row = move[1] - '1';
+    int col = move[0] - 'a';
+    return row * 5 + col;
+}
+
+int is_legal_move_form(char move[2]) {
+    int row = move[1] - '1';
+    int col = move[0] - 'a';
+    if (0 <= row && row <= 4 && 0 <= col && col <= 4) {
+        return 1;
+    }
+    return 0;
+}
+
+int is_legal_move(char move[2], char turn) {
+    if (!is_legal_move_form(move)) {
+        printf("input needs in a1,..., e5\n");
+        return 0;
+    }
+
+    int selecter_pos = B->selecter_pos;
+    int s_row = selecter_pos / 5;
+    int s_col = selecter_pos % 5;
+
+    int move_index = move2index(move);
+    int m_row = move_index / 5;
+    int m_col = move_index % 5;
+
+    if (turn == YOUR_TURN) {
+        // allow only horizontal move
+        if (selecter_pos != move_index && s_row == m_row) {
+            return 1;
+        }
+        return 0;
+    } else {
+        // allow only vertical move
+        if (selecter_pos != move_index && s_col == m_col) {
+            return 1;
+        }
+        return 0;
+    }
 }
 
 void print_result() {
@@ -98,7 +144,8 @@ int main() {
     char turn = YOUR_TURN;
 
     // 先手は横、後手は縦
-
+    int your_point = 0;
+    int opp_point = 0;
     while (1) {
         print_board();
 
@@ -106,6 +153,10 @@ int main() {
             char move[2];
             printf("move: ");
             scanf("%s", move);
+            while (!is_legal_move(move, turn)) {
+                printf("invalid move, choose again: ");
+                scanf("%s", move);
+            }
 
             turn = OPP_TURN;
         } else {
@@ -118,10 +169,6 @@ int main() {
             break;
         }
     }
-
-
-
-
 
     return 0;
 }
