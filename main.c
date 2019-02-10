@@ -6,10 +6,11 @@ struct BOARD {
     int selecter_pos;
 };
 
-char B_state_arr[25] = {0};
+int B_state_arr[25];
 #define B_NUM 0
 #define B_SEL 1 // selecter
 #define B_NON 2 // none
+#define B_OVER 9 // game over(:= B_NON * 4 + B_SEL)
 
 struct BOARD *B;
 #define YOUR_TURN 0
@@ -51,6 +52,8 @@ void init_board() {
         }
 
         choice_array[abs_index] = 1;
+
+        B_state_arr[p_pos] = B_NUM;
         if (pieces[abs_index] == 0) {
             B->selecter_pos = p_pos;
             B_state_arr[p_pos] = B_SEL;
@@ -90,8 +93,35 @@ void print_board() {
     printf("  a   b   c   d   e\n\n");
 }
 
+// debug用
+void print_B_state_arr() {
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            printf("  %d", B_state_arr[i*5 + j]);
+        }
+        printf("\n");
+    }
+}
+
 int is_gameover() {
-    // tmp
+    int s_pos = B->selecter_pos;
+    int s_row = s_pos / 5;
+    int s_col = s_pos % 5;
+
+    int state_sum = 0;
+    if (turn == YOUR_TURN) {
+        for (int i = 0; i < 5; i++) {
+            state_sum += B_state_arr[s_row * 5 + i];
+        }
+    } else {
+        for (int i = 0; i < 5; i++) {
+            state_sum += B_state_arr[s_col + i * 5];
+        }
+    }
+
+    if (state_sum == B_OVER) {
+        return 1;
+    }
     return 0;
 }
 
@@ -141,7 +171,7 @@ int is_legal_move(char move[2]) {
 
 void print_result() {
     // tmp
-    printf("you win");
+    printf("you win\n");
 }
 
 void next_state() {
@@ -158,11 +188,8 @@ void next_state() {
         B_state_arr[m_pos] = B_SEL;
         B_state_arr[B->selecter_pos] = B_NON;
         B->selecter_pos = m_pos;
-
-        turn = OPP_TURN;
     } else {
         printf("COM move: %s\n", "XX");
-        turn = YOUR_TURN;
     }
 }
 
@@ -186,12 +213,16 @@ int main() {
     while (1) {
         print_board();
 
-        next_state();
-
         if (is_gameover()){
+            printf("game over\n");
             print_result();
             break;
         }
+
+        next_state();
+
+        // YOUR_TURN => OPP_TURN, OPP_TURN => YOUR_TURN
+        turn ^= 1;
     }
 
     return 0;
