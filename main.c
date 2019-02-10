@@ -125,10 +125,17 @@ int is_gameover() {
     return 0;
 }
 
-int move2index(char move[2]) {
+int move2pos(char move[2]) {
     int row = move[1] - '1';
     int col = move[0] - 'a';
     return row * 5 + col;
+}
+
+void pos2move(int pos, char move[2]) {
+    int row = pos / 5;
+    int col = pos % 5;
+    move[0] = col + 'a';
+    move[1] = row + '1';
 }
 
 int is_legal_move_form(char move[2]) {
@@ -150,7 +157,7 @@ int is_legal_move(char move[2]) {
     int s_row = s_pos / 5;
     int s_col = s_pos % 5;
 
-    int m_pos = move2index(move);
+    int m_pos = move2pos(move);
     int m_row = m_pos / 5;
     int m_col = m_pos % 5;
 
@@ -170,6 +177,7 @@ int is_legal_move(char move[2]) {
 }
 
 void print_result() {
+    printf("%d - %d\n", you_point, opp_point);
     if (you_point > opp_point) {
         printf("you win\n");
     } else if (you_point < opp_point) {
@@ -177,6 +185,27 @@ void print_result() {
     } else {
         printf("draw\n");
     }
+}
+
+int get_COM_move() {
+    int s_pos = B->selecter_pos;
+    int s_row = s_pos / 5;
+    int s_col = s_pos % 5;
+
+    // 縦一列のmaxを探す
+    int tmp = -10000;
+    int ret;
+    for (int i = 0; i < 5; i++) {
+        int pos = i * 5 + s_col;
+        if (i == s_row || B_state_arr[pos] == B_NON) {
+            continue;
+        }
+        if (B->piece[pos] > tmp) {
+            tmp = B->piece[pos];
+            ret = pos;
+        }
+    }
+    return ret;
 }
 
 void next_state() {
@@ -188,13 +217,22 @@ void next_state() {
             printf("invalid move, choose again: ");
             scanf("%s", move);
         }
-        int m_pos = move2index(move);
+
+        int m_pos = move2pos(move);
         you_point += B->piece[m_pos];
         B_state_arr[m_pos] = B_SEL;
         B_state_arr[B->selecter_pos] = B_NON;
         B->selecter_pos = m_pos;
     } else {
-        printf("COM move: %s\n", "XX");
+        int com_move_pos = get_COM_move();
+        char com_move[2];
+        pos2move(com_move_pos, com_move);
+        printf("COM move: %s\n", com_move);
+
+        opp_point += B->piece[com_move_pos];
+        B_state_arr[com_move_pos] = B_SEL;
+        B_state_arr[B->selecter_pos] = B_NON;
+        B->selecter_pos = com_move_pos;
     }
 }
 
