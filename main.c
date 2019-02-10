@@ -6,16 +6,24 @@ struct BOARD {
     int selecter_pos;
 };
 
+char B_state_arr[25] = {0};
+#define B_NUM 0
+#define B_SEL 1 // selecter
+#define B_NON 2 // none
+
 struct BOARD *B;
 #define YOUR_TURN 0
 #define OPP_TURN 1
-#define CHOSED -10
+
+char turn;
+int you_point;
+int opp_point;
 
 void init_board() {
     int pieces[25] = {9, -9, 8, -8, 7, -7, 6, -6, 5, -5, 4, -4,
                       3, -3, 3, -3, 2, -2, 2, -2, 1, -1, 1, -1, 0};
 
-    // 1: 選ばれた, 0:選ばれていない
+    // 1: 選ばれた, 0: 選ばれていない
     char choice_array[25] = {0};
 
     // Fisher-Yates shuffle
@@ -45,8 +53,20 @@ void init_board() {
         choice_array[abs_index] = 1;
         if (pieces[abs_index] == 0) {
             B->selecter_pos = p_pos;
+            B_state_arr[p_pos] = B_SEL;
         }
         B->piece[p_pos] = pieces[abs_index];
+    }
+}
+
+void print_cell(int index) {
+    char s = B_state_arr[index];
+    if (s == B_SEL) {
+        printf("  X|");
+    } else if (s == B_NON) {
+        printf("   |");
+    } else {
+        printf("%3d|", B->piece[index]);
     }
 }
 
@@ -56,14 +76,9 @@ void print_board() {
         if (i % 5 == 0) {
             printf("|");
         }
-        int n = B->piece[i];
-        if (n == 0) {
-            printf("  X|");
-        } else if (n == CHOSED) {
-            printf("   |");
-        } else {
-            printf("%3d|", B->piece[i]);
-        }
+
+        print_cell(i);
+
         if ((i + 1) % 5 == 0) {
             printf(" %d", (i / 5) + 1);
         }
@@ -95,7 +110,7 @@ int is_legal_move_form(char move[2]) {
     return 0;
 }
 
-int is_legal_move(char move[2], char turn) {
+int is_legal_move(char move[2]) {
     if (!is_legal_move_form(move)) {
         printf("input needs in a1,..., e5\n");
         return 0;
@@ -111,13 +126,13 @@ int is_legal_move(char move[2], char turn) {
 
     if (turn == YOUR_TURN) {
         // allow only horizontal move
-        if (s_pos != m_pos && s_row == m_row && B->piece[m_pos] != CHOSED) {
+        if (s_pos != m_pos && s_row == m_row && B_state_arr[m_pos] != B_NON) {
             return 1;
         }
         return 0;
     } else {
         // allow only vertical move
-        if (s_pos != m_pos && s_col == m_col && B->piece[m_pos] != CHOSED) {
+        if (s_pos != m_pos && s_col == m_col && B_state_arr[m_pos] != B_NON) {
             return 1;
         }
         return 0;
@@ -127,6 +142,28 @@ int is_legal_move(char move[2], char turn) {
 void print_result() {
     // tmp
     printf("you win");
+}
+
+void next_state() {
+    if (turn == YOUR_TURN) {
+        char move[2];
+        printf("move: ");
+        scanf("%s", move);
+        while (!is_legal_move(move)) {
+            printf("invalid move, choose again: ");
+            scanf("%s", move);
+        }
+        int m_pos = move2index(move);
+        you_point += B->piece[m_pos];
+        B_state_arr[m_pos] = B_SEL;
+        B_state_arr[B->selecter_pos] = B_NON;
+        B->selecter_pos = m_pos;
+
+        turn = OPP_TURN;
+    } else {
+        printf("COM move: %s\n", "XX");
+        turn = YOUR_TURN;
+    }
 }
 
 int main() {
@@ -141,31 +178,15 @@ int main() {
         return 0;
     }
 
-    char turn = YOUR_TURN;
+    turn = YOUR_TURN;
 
     // 先手は横、後手は縦
-    int you_point = 0;
-    int opp_point = 0;
+    you_point = 0;
+    opp_point = 0;
     while (1) {
         print_board();
 
-        if (turn == YOUR_TURN) {
-            char move[2];
-            printf("move: ");
-            scanf("%s", move);
-            while (!is_legal_move(move, turn)) {
-                printf("invalid move, choose again: ");
-                scanf("%s", move);
-            }
-            int m_pos = move2index(move);
-            you_point += B->piece[m_pos];
-            B->piece[m_pos] = CHOSED;
-
-            turn = OPP_TURN;
-        } else {
-            printf("COM move: %s\n", "XX");
-            turn = YOUR_TURN;
-        }
+        next_state();
 
         if (is_gameover()){
             print_result();
