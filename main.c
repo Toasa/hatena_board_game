@@ -6,7 +6,9 @@ struct BOARD {
     int selecter_pos;
 };
 
-int B_state_arr[25];
+// int B_state_arr[25];
+int *B_state_arr;
+
 #define B_NUM 0
 #define B_SEL 1 // selecter
 #define B_NON 2 // none
@@ -176,6 +178,45 @@ int is_legal_move(char move[2]) {
     }
 }
 
+// return the valid moves array(vma).
+// vma's 1st element is length of the vma except itself.
+// ex. [3, 5, 6, 9] means that valid moves is 5, 6, 9(a2, b2, e2).
+int *get_legal_moves() {
+    int s_pos = B->selecter_pos;
+    int s_row = s_pos / 5;
+    int s_col = s_pos % 5;
+
+    int *ret_arr = malloc(sizeof(int) * 5);
+    int legal_moves_count = 0;
+
+    // 縦一列を探す
+    if (turn == OPP_TURN) {
+        for (int i = 0; i < 5; i++) {
+            int pos = i * 5 + s_col;
+            if (i == s_row || B_state_arr[pos] == B_NON) {
+                continue;
+            }
+            legal_moves_count++;
+            ret_arr[legal_moves_count] = pos;
+        }
+    }
+
+    // 横一列を探す
+    if (turn == YOUR_TURN) {
+        for (int i = 0; i < 5; i++) {
+            int pos = i + s_row * 5;
+            if (i == s_col || B_state_arr[pos] == B_NON) {
+                continue;
+            }
+            legal_moves_count++;
+            ret_arr[legal_moves_count] = pos;
+        }
+    }
+
+    ret_arr[0] = legal_moves_count;
+    return ret_arr;
+}
+
 void print_result() {
     printf("%d - %d\n", you_point, opp_point);
     if (you_point > opp_point) {
@@ -187,9 +228,7 @@ void print_result() {
     }
 }
 
-
-// min-max法を実装したい
-int get_COM_move() {
+int get_COM_imm_opt_move() {
     int s_pos = B->selecter_pos;
     int s_row = s_pos / 5;
     int s_col = s_pos % 5;
@@ -210,6 +249,73 @@ int get_COM_move() {
     return ret;
 }
 
+int get_YOUR_imm_opt_move() {
+    int s_pos = B->selecter_pos;
+    int s_row = s_pos / 5;
+    int s_col = s_pos % 5;
+
+    // 横一列のmaxを探す
+    int tmp = -10000;
+    int ret;
+    for (int i = 0; i < 5; i++) {
+        int pos = i + s_row * 5;
+        if (i == s_col || B_state_arr[pos] == B_NON) {
+            continue;
+        }
+        if (B->piece[pos] > tmp) {
+            tmp = B->piece[pos];
+            ret = pos;
+        }
+    }
+    return ret;
+}
+
+// put a next state
+void push_pos(int pos) {
+    B_state_arr[pos] = B_SEL;
+    B_state_arr[B->selecter_pos] = B_NON;
+    B->selecter_pos = pos;
+}
+
+// incorrect!
+int min_max(int depth, int tmp_value) {
+    if (depth == 0) {
+        return tmp_value;
+    }
+
+    // malloc 必要？
+    int *B_state_arr_org = B_state_arr;
+    char turn_org = turn;
+
+    int ret_pos;
+    int point_tmp = 0;
+    int MAX = -10000;
+
+    int *legal_moves = get_legal_moves();
+    for (int i = 0; i < legal_moves[0]; i++) {
+        int pos = legal_moves[i+1];
+        if (turn == OPP_TURN) {
+            point_tmp += B->piece[pos];
+        } else {
+            point_tmp -= B->piece[pos];
+        }
+        push_pos(pos);
+        turn ^= 1;
+
+        int tmp = min_max(depth - 1, point_tmp);
+        if (tmp > MAX) {
+            MAX = tmp;
+            ret_pos = pos;
+        }
+        point_tmp = 0;
+    }
+
+    B_state_arr = B_state_arr_org;
+    turn = turn_org;
+
+    return ret_pos;
+}
+
 void next_state() {
     if (turn == YOUR_TURN) {
         char move[2];
@@ -222,24 +328,22 @@ void next_state() {
 
         int m_pos = move2pos(move);
         you_point += B->piece[m_pos];
-        B_state_arr[m_pos] = B_SEL;
-        B_state_arr[B->selecter_pos] = B_NON;
-        B->selecter_pos = m_pos;
+        push_pos(m_pos);
     } else {
-        int com_move_pos = get_COM_move();
+        int com_move_pos = get_COM_imm_opt_move();
+        //int com_move_pos = min_max(2, 0);
         char com_move[2];
         pos2move(com_move_pos, com_move);
         printf("COM move: %s\n", com_move);
 
         opp_point += B->piece[com_move_pos];
-        B_state_arr[com_move_pos] = B_SEL;
-        B_state_arr[B->selecter_pos] = B_NON;
-        B->selecter_pos = com_move_pos;
+        push_pos(com_move_pos);
     }
 }
 
 int main() {
     B = malloc(sizeof(struct BOARD));
+    B_state_arr = malloc(sizeof(int) * 25);
     init_board();
 
     printf("Input mode(1: vs COM): ");
@@ -263,6 +367,19 @@ int main() {
             print_result();
             break;
         }
+
+
+
+        int *legal_moves = get_legal_moves();
+        printf("valid moves num: %d\n", legal_moves[0]);
+        for (int i = 0; i < legal_moves[0]; i++) {
+            int pos = legal_moves[i+1];
+            printf("%d ", pos);
+        }
+        printf("\n");
+
+
+
 
         next_state();
 
