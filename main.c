@@ -275,6 +275,9 @@ void push_pos(int pos) {
     B_state_arr[pos] = B_SEL;
     B_state_arr[B->selecter_pos] = B_NON;
     B->selecter_pos = pos;
+
+    // YOUR_TURN => OPP_TURN, OPP_TURN => YOUR_TURN
+    turn ^= 1;
 }
 
 // incorrect!
@@ -294,13 +297,7 @@ int min_max(int depth, int tmp_value) {
     int *legal_moves = get_legal_moves();
     for (int i = 0; i < legal_moves[0]; i++) {
         int pos = legal_moves[i+1];
-        if (turn == OPP_TURN) {
-            point_tmp += B->piece[pos];
-        } else {
-            point_tmp -= B->piece[pos];
-        }
         push_pos(pos);
-        turn ^= 1;
 
         int tmp = min_max(depth - 1, point_tmp);
         if (tmp > MAX) {
@@ -368,23 +365,7 @@ int main() {
             break;
         }
 
-
-
-        int *legal_moves = get_legal_moves();
-        printf("valid moves num: %d\n", legal_moves[0]);
-        for (int i = 0; i < legal_moves[0]; i++) {
-            int pos = legal_moves[i+1];
-            printf("%d ", pos);
-        }
-        printf("\n");
-
-
-
-
         next_state();
-
-        // YOUR_TURN => OPP_TURN, OPP_TURN => YOUR_TURN
-        turn ^= 1;
     }
 
     return 0;
