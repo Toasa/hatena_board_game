@@ -154,38 +154,29 @@ int get_imm_opt_move() {
     int s_row = s_pos / 5;
     int s_col = s_pos % 5;
 
-    int ret;
+    int ret, pos;
 
-    if (B->turn == P1_TURN) {
-        // 横一列のmaxを探す
-        int tmp = -10000;
-        for (int i = 0; i < 5; i++) {
-            int pos = i + s_row * 5;
+    int tmp = -10000;
+    for (int i = 0; i < 5; i++) {
+
+        if (B->turn == P1_TURN) {
+            // 横一列のmaxを探す
+            pos = i + s_row * 5;
             if (i == s_col || B->state[pos] == B_NON) {
                 continue;
             }
-            if (B->piece[pos] > tmp) {
-                tmp = B->piece[pos];
-                ret = pos;
-            }
-        }
-    }
-
-    if (B->turn == P2_TURN) {
-        // 縦一列のmaxを探す
-        int tmp = -10000;
-        for (int i = 0; i < 5; i++) {
-            int pos = i * 5 + s_col;
+        } else {
+            // 縦一列のmaxを探す
+            pos = i * 5 + s_col;
             if (i == s_row || B->state[pos] == B_NON) {
                 continue;
             }
-            if (B->piece[pos] > tmp) {
-                tmp = B->piece[pos];
-                ret = pos;
-            }
+        }
+        if (B->piece[pos] > tmp) {
+            tmp = B->piece[pos];
+            ret = pos;
         }
     }
-
     return ret;
 }
 
@@ -339,10 +330,16 @@ int main() {
         push_pos(m_pos);
     }
 
+    print_board();
+    print_state();
 
+    getchar();
 
-
-
+    printf("------------------------------\n");
+    pop();
+    print_board();
+    print_state();
+    printf("------------------------------\n");
 
 
     // while (1) {
