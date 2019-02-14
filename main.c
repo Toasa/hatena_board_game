@@ -4,9 +4,10 @@
 struct BOARD {
     int piece[25];
     int selecter_pos;
+    int last_selecter_pos;
+    int *last_B_state_arr;
 };
 
-// int B_state_arr[25];
 int *B_state_arr;
 
 #define B_NUM 0
@@ -272,44 +273,100 @@ int get_YOUR_imm_opt_move() {
 
 // put a next state
 void push_pos(int pos) {
+    B->last_B_state_arr = B_state_arr;
     B_state_arr[pos] = B_SEL;
     B_state_arr[B->selecter_pos] = B_NON;
+    B->last_selecter_pos = B->selecter_pos;
     B->selecter_pos = pos;
 
     // YOUR_TURN => OPP_TURN, OPP_TURN => YOUR_TURN
     turn ^= 1;
 }
 
+// incorrect?, cannot call pop() -> pop()
+void pop() {
+    B_state_arr = B->last_B_state_arr;
+    B->selecter_pos = B->last_selecter_pos;
+    turn ^= 1;
+}
+
 // incorrect!
-int min_max(int depth, int tmp_value) {
+int min_max(int depth) {
     if (depth == 0) {
-        return tmp_value;
+        return B->piece[B->selecter_pos];
     }
 
     // malloc 必要？
     int *B_state_arr_org = B_state_arr;
+    int selecter_pos_org = B->selecter_pos;
     char turn_org = turn;
 
     int ret_pos;
-    int point_tmp = 0;
-    int MAX = -10000;
 
     int *legal_moves = get_legal_moves();
     for (int i = 0; i < legal_moves[0]; i++) {
+        int val;
+        int val_MAX = -10000;
+
         int pos = legal_moves[i+1];
         push_pos(pos);
+        val = min_max(depth - 1);
 
-        int tmp = min_max(depth - 1, point_tmp);
-        if (tmp > MAX) {
-            MAX = tmp;
+        B_state_arr = B_state_arr_org;
+        B->selecter_pos = selecter_pos_org;
+        turn = turn_org;
+
+        if (val > val_MAX) {
+            val_MAX = val;
             ret_pos = pos;
         }
-        point_tmp = 0;
     }
+    return ret_pos;
+}
 
-    B_state_arr = B_state_arr_org;
-    turn = turn_org;
+int min_max_simple() {
+    // malloc 必要？
+    int *B_state_arr_org = B_state_arr;
+    int selecter_pos_org = B->selecter_pos;
+    char turn_org = turn;
 
+    int ret_pos;
+
+    int *legal_moves = get_legal_moves();
+    int val_MAX = -10000;
+    int tmp_val = 0;
+    for (int i = 0; i < legal_moves[0]; i++) {
+        int pos = legal_moves[i+1];
+        tmp_val += B->piece[pos];
+        push_pos(pos);
+
+        int *legal_moves_opp = get_legal_moves();
+        for (int j = 0; j < legal_moves_opp[0]; j++) {
+            int pos_opp = legal_moves_opp[j+1];
+            tmp_val -= B->piece[pos];
+
+            int *B_state_arr_org_opp = B_state_arr;
+            int selecter_pos_org_opp = B->selecter_pos;
+            char turn_org_opp = turn;
+
+            push_pos(pos);
+
+            if (tmp_val > val_MAX) {
+                tmp_val = val_MAX;
+                ret_pos = pos;
+            }
+
+            tmp_val = 0;
+
+            B_state_arr = B_state_arr_org_opp;
+            B->selecter_pos = selecter_pos_org_opp;
+            turn = turn_org_opp;
+        }
+
+        B_state_arr = B_state_arr_org;
+        B->selecter_pos = selecter_pos_org;
+        turn = turn_org;
+    }
     return ret_pos;
 }
 
@@ -328,7 +385,8 @@ void next_state() {
         push_pos(m_pos);
     } else {
         int com_move_pos = get_COM_imm_opt_move();
-        //int com_move_pos = min_max(2, 0);
+        //int com_move_pos = min_max(1);
+        //int com_move_pos = min_max_simple();
         char com_move[2];
         pos2move(com_move_pos, com_move);
         printf("COM move: %s\n", com_move);
