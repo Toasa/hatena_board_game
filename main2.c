@@ -180,27 +180,30 @@ int get_imm_opt_move() {
     return ret;
 }
 
-// put a next state
+// B->nextとB->prevの扱いがうまく行っていない
 void push_pos(int pos) {
-    B->prev = B;
-
     B->state[pos] = B_SEL;
     B->state[B->selecter_pos] = B_NON;
     B->selecter_pos = pos;
 
     // P1_TURN => P2_TURN, P2_TURN => P1_TURN
     B->turn ^= 1;
+}
 
-    B->prev->next = B;
+// Sava the `B` at the time
+struct BOARD *gen_board() {
+    struct BOARD *b = malloc(sizeof(struct BOARD));
+    *b = *B;
+    return b;
 }
 
 // incorrect?, cannot call pop() -> pop()
-void pop() {
-    struct BOARD *B_org = B;
-    B = B->prev;
-    B->prev = B_org->prev->prev;
-    B->next = B_org;
-}
+// void pop() {
+//     struct BOARD *B_org = B;
+//     B = B->prev;
+//     B->prev = B_org->prev->prev;
+//     B->next = B_org;
+// }
 
 int is_legal_move_form(int m_pos) {
     char move[2];
@@ -308,6 +311,11 @@ void next_state() {
 
 int main() {
     B = malloc(sizeof(struct BOARD));
+    struct BOARD *b = malloc(sizeof(struct BOARD));
+    b = gen_board();
+    b->prev = NULL;
+    struct BOARD *b_next = malloc(sizeof(struct BOARD));
+    b_next = NULL;
     init();
 
     for (int i = 0; i < 4; i++) {
@@ -327,7 +335,15 @@ int main() {
         // stopのためのみ
         getchar();
 
+        if (b_next != NULL) {
+            b = b_next;
+        }
+
         push_pos(m_pos);
+        b_next = gen_board();
+        b_next->prev = b;
+        b->next = b_next;
+        B = b_next;
     }
 
     print_board();
@@ -336,39 +352,10 @@ int main() {
     getchar();
 
     printf("------------------------------\n");
-    pop();
+    B = B->prev->prev->prev;
     print_board();
     print_state();
     printf("------------------------------\n");
-
-
-    // while (1) {
-    //     print_board();
-    //     print_state();
-    //
-    //     if (is_gameover()){
-    //         printf("game over\n");
-    //         break;
-    //     }
-    //
-    //     if (B->turn == P1_TURN) {
-    //         printf("move: ");
-    //     } else {
-    //         printf("COM move: ");
-    //     }
-    //     int m_pos = get_imm_opt_move();
-    //     char move[2];
-    //     pos2move(m_pos, move);
-    //     printf("%s", move);
-    //
-    //     // stopのためのみ
-    //     getchar();
-    //
-    //     push_pos(m_pos);
-    //
-    //     c++;
-    // }
-
 
     return 0;
 }
