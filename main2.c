@@ -149,24 +149,43 @@ void pos2move(int pos, char move[2]) {
     move[1] = row + '1';
 }
 
-int get_COM_imm_opt_move() {
+int get_imm_opt_move() {
     int s_pos = B->selecter_pos;
     int s_row = s_pos / 5;
     int s_col = s_pos % 5;
 
-    // 縦一列のmaxを探す
-    int tmp = -10000;
     int ret;
-    for (int i = 0; i < 5; i++) {
-        int pos = i * 5 + s_col;
-        if (i == s_row || B->state[pos] == B_NON) {
-            continue;
-        }
-        if (B->piece[pos] > tmp) {
-            tmp = B->piece[pos];
-            ret = pos;
+
+    if (B->turn == P1_TURN) {
+        // 横一列のmaxを探す
+        int tmp = -10000;
+        for (int i = 0; i < 5; i++) {
+            int pos = i + s_row * 5;
+            if (i == s_col || B->state[pos] == B_NON) {
+                continue;
+            }
+            if (B->piece[pos] > tmp) {
+                tmp = B->piece[pos];
+                ret = pos;
+            }
         }
     }
+
+    if (B->turn == P2_TURN) {
+        // 縦一列のmaxを探す
+        int tmp = -10000;
+        for (int i = 0; i < 5; i++) {
+            int pos = i * 5 + s_col;
+            if (i == s_row || B->state[pos] == B_NON) {
+                continue;
+            }
+            if (B->piece[pos] > tmp) {
+                tmp = B->piece[pos];
+                ret = pos;
+            }
+        }
+    }
+
     return ret;
 }
 
@@ -285,7 +304,7 @@ void next_state() {
         B->P1_point += B->piece[m_pos];
         push_pos(m_pos);
     } else {
-        int com_move_pos = get_COM_imm_opt_move();
+        int com_move_pos = get_imm_opt_move();
 
         char com_move[2];
         pos2move(com_move_pos, com_move);
@@ -300,17 +319,58 @@ int main() {
     B = malloc(sizeof(struct BOARD));
     init();
 
-    while (1) {
+    for (int i = 0; i < 4; i++) {
         print_board();
         print_state();
 
-        if (is_gameover()){
-            printf("game over\n");
-            break;
+        if (B->turn == P1_TURN) {
+            printf("move: ");
+        } else {
+            printf("COM move: ");
         }
+        int m_pos = get_imm_opt_move();
+        char move[2];
+        pos2move(m_pos, move);
+        printf("%s", move);
 
-        next_state();
+        // stopのためのみ
+        getchar();
+
+        push_pos(m_pos);
     }
+
+
+
+
+
+
+
+    // while (1) {
+    //     print_board();
+    //     print_state();
+    //
+    //     if (is_gameover()){
+    //         printf("game over\n");
+    //         break;
+    //     }
+    //
+    //     if (B->turn == P1_TURN) {
+    //         printf("move: ");
+    //     } else {
+    //         printf("COM move: ");
+    //     }
+    //     int m_pos = get_imm_opt_move();
+    //     char move[2];
+    //     pos2move(m_pos, move);
+    //     printf("%s", move);
+    //
+    //     // stopのためのみ
+    //     getchar();
+    //
+    //     push_pos(m_pos);
+    //
+    //     c++;
+    // }
 
 
     return 0;
