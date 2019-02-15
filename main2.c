@@ -300,6 +300,7 @@ int get_imm_opt_move() {
     return ret;
 }
 
+// うまくいってない(終盤の扱い)
 int min_max_simple() {
     int ret_pos;
 
@@ -310,30 +311,22 @@ int min_max_simple() {
 
         int pos = legal_moves[i+1];
 
-        if (B->turn == P1_TURN) {
-            val += B->piece[B->selecter_pos];
-        } else {
-            val -= B->piece[B->selecter_pos];
-        }
         push_pos(pos);
-
-        int *legal_moves_0 = get_legal_moves();
-        for (int j = 0; j < legal_moves_0[0]; j++) {
-            int pos_0 = legal_moves_0[j+1];
-            if (B->turn == P1_TURN) {
-                val += B->piece[B->selecter_pos];
-            } else {
-                val -= B->piece[B->selecter_pos];
-            }
-
-            if (val > val_MAX) {
-                val_MAX = val;
-                ret_pos = pos;
-            }
+        if (is_gameover()) {
+            pop();
+            continue;
         }
+        val += B->piece[B->selecter_pos];
 
+        int pos_0 = get_imm_opt_move();
+        val -= B->piece[pos_0];
+        if (val > val_MAX) {
+            val_MAX = val;
+            ret_pos = pos;
+        }
         pop();
     }
+
     return ret_pos;
 }
 
@@ -352,8 +345,8 @@ void next_state() {
         B->P1_point += B->piece[m_pos];
         push_pos(m_pos);
     } else {
-        int com_move_pos = get_imm_opt_move();
-        //int com_move_pos = min_max_simple();
+        //int com_move_pos = get_imm_opt_move();
+        int com_move_pos = min_max_simple();
 
         char com_move[2];
         pos2move(com_move_pos, com_move);
@@ -370,7 +363,6 @@ int main() {
 
     while (1) {
         print_board();
-        print_state();
 
         if (is_gameover()){
             printf("game over\n");
