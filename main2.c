@@ -12,11 +12,12 @@ struct BOARD {
     struct BOARD *next;
 };
 
-#define B_NUM 0
+#define B_NUM 0 // number
 #define B_SEL 1 // selecter
 #define B_NON 2 // none
 #define B_OVER 9 // game over(:= B_NON * 4 + B_SEL)
 
+// B always represents latest board state
 struct BOARD *B;
 #define P1_TURN 0
 #define P2_TURN 1
@@ -104,13 +105,27 @@ void print_board() {
     printf("  a   b   c   d   e\n\n");
 }
 
-// debug用
+// for debug
 void print_state() {
     for (int i = 0; i < 5; i++) {
         for (int j = 0; j < 5; j++) {
             printf("  %d", B->state[i*5 + j]);
         }
         printf("\n");
+    }
+}
+
+void print_result() {
+    int p1 = B->P1_point;
+    int p2 = B->P2_point;
+
+    printf("%d - %d\n", p1, p2);
+    if (p1 > p2) {
+        printf("you win\n");
+    } else if (p1 < p2) {
+        printf("you lose\n");
+    } else {
+        printf("draw\n");
     }
 }
 
@@ -148,62 +163,6 @@ void pos2move(int pos, char move[2]) {
     move[0] = col + 'a';
     move[1] = row + '1';
 }
-
-int get_imm_opt_move() {
-    int s_pos = B->selecter_pos;
-    int s_row = s_pos / 5;
-    int s_col = s_pos % 5;
-
-    int ret, pos;
-
-    int tmp = -10000;
-    for (int i = 0; i < 5; i++) {
-
-        if (B->turn == P1_TURN) {
-            // 横一列のmaxを探す
-            pos = i + s_row * 5;
-            if (i == s_col || B->state[pos] == B_NON) {
-                continue;
-            }
-        } else {
-            // 縦一列のmaxを探す
-            pos = i * 5 + s_col;
-            if (i == s_row || B->state[pos] == B_NON) {
-                continue;
-            }
-        }
-        if (B->piece[pos] > tmp) {
-            tmp = B->piece[pos];
-            ret = pos;
-        }
-    }
-    return ret;
-}
-
-// B->nextとB->prevの扱いがうまく行っていない
-void push_pos(int pos) {
-    B->state[pos] = B_SEL;
-    B->state[B->selecter_pos] = B_NON;
-    B->selecter_pos = pos;
-
-    // P1_TURN => P2_TURN, P2_TURN => P1_TURN
-    B->turn ^= 1;
-}
-
-// Sava the `B` at the time
-struct BOARD *gen_board() {
-    struct BOARD *b = malloc(sizeof(struct BOARD));
-    *b = *B;
-    return b;
-}
-
-// incorrect?, cannot call pop() -> pop()
-// void pop() {
-//     struct BOARD *B_org = B;
-//     B = B->prev;
-//     B->prev = B_org->prev->prev;
-//     B->next = B_org;
-// }
 
 int is_legal_move_form(int m_pos) {
     char move[2];
@@ -256,7 +215,7 @@ int *get_legal_moves() {
     int legal_moves_count = 0;
 
     // 縦一列を探す
-    if (B->turn == P1_TURN) {
+    if (B->turn == P2_TURN) {
         for (int i = 0; i < 5; i++) {
             int pos = i * 5 + s_col;
             if (i == s_row || B->state[pos] == B_NON) {
@@ -268,7 +227,7 @@ int *get_legal_moves() {
     }
 
     // 横一列を探す
-    if (B->turn == P2_TURN) {
+    if (B->turn == P1_TURN) {
         for (int i = 0; i < 5; i++) {
             int pos = i + s_row * 5;
             if (i == s_col || B->state[pos] == B_NON) {
@@ -281,6 +240,101 @@ int *get_legal_moves() {
 
     ret_arr[0] = legal_moves_count;
     return ret_arr;
+}
+
+// Sava the `B` at the time
+struct BOARD *save_B() {
+    struct BOARD *b = malloc(sizeof(struct BOARD));
+    *b = *B;
+    return b;
+}
+
+void push_pos(int pos) {
+    struct BOARD *B_prev = save_B();
+
+    B->state[pos] = B_SEL;
+    B->state[B->selecter_pos] = B_NON;
+    B->selecter_pos = pos;
+
+    // P1_TURN => P2_TURN, P2_TURN => P1_TURN
+    B->turn ^= 1;
+
+    struct BOARD *B_next = save_B();
+    B_next->prev = B_prev;
+    B_prev->next = B_next;
+    B = B_next;
+}
+
+void pop() {
+    B = B->prev;
+}
+
+int get_imm_opt_move() {
+    int s_pos = B->selecter_pos;
+    int s_row = s_pos / 5;
+    int s_col = s_pos % 5;
+
+    int ret, pos;
+
+    int tmp = -10000;
+    for (int i = 0; i < 5; i++) {
+
+        if (B->turn == P1_TURN) {
+            // 横一列のmaxを探す
+            pos = i + s_row * 5;
+            if (i == s_col || B->state[pos] == B_NON) {
+                continue;
+            }
+        } else {
+            // 縦一列のmaxを探す
+            pos = i * 5 + s_col;
+            if (i == s_row || B->state[pos] == B_NON) {
+                continue;
+            }
+        }
+        if (B->piece[pos] > tmp) {
+            tmp = B->piece[pos];
+            ret = pos;
+        }
+    }
+    return ret;
+}
+
+int min_max_simple() {
+    int ret_pos;
+
+    int *legal_moves = get_legal_moves();
+    int val_MAX = -10000;
+    for (int i = 0; i < legal_moves[0]; i++) {
+        int val = 0;
+
+        int pos = legal_moves[i+1];
+
+        if (B->turn == P1_TURN) {
+            val += B->piece[B->selecter_pos];
+        } else {
+            val -= B->piece[B->selecter_pos];
+        }
+        push_pos(pos);
+
+        int *legal_moves_0 = get_legal_moves();
+        for (int j = 0; j < legal_moves_0[0]; j++) {
+            int pos_0 = legal_moves_0[j+1];
+            if (B->turn == P1_TURN) {
+                val += B->piece[B->selecter_pos];
+            } else {
+                val -= B->piece[B->selecter_pos];
+            }
+
+            if (val > val_MAX) {
+                val_MAX = val;
+                ret_pos = pos;
+            }
+        }
+
+        pop();
+    }
+    return ret_pos;
 }
 
 void next_state() {
@@ -299,6 +353,7 @@ void next_state() {
         push_pos(m_pos);
     } else {
         int com_move_pos = get_imm_opt_move();
+        //int com_move_pos = min_max_simple();
 
         char com_move[2];
         pos2move(com_move_pos, com_move);
@@ -311,51 +366,20 @@ void next_state() {
 
 int main() {
     B = malloc(sizeof(struct BOARD));
-    struct BOARD *b = malloc(sizeof(struct BOARD));
-    b = gen_board();
-    b->prev = NULL;
-    struct BOARD *b_next = malloc(sizeof(struct BOARD));
-    b_next = NULL;
     init();
 
-    for (int i = 0; i < 4; i++) {
+    while (1) {
         print_board();
         print_state();
 
-        if (B->turn == P1_TURN) {
-            printf("move: ");
-        } else {
-            printf("COM move: ");
-        }
-        int m_pos = get_imm_opt_move();
-        char move[2];
-        pos2move(m_pos, move);
-        printf("%s", move);
-
-        // stopのためのみ
-        getchar();
-
-        if (b_next != NULL) {
-            b = b_next;
+        if (is_gameover()){
+            printf("game over\n");
+            print_result();
+            break;
         }
 
-        push_pos(m_pos);
-        b_next = gen_board();
-        b_next->prev = b;
-        b->next = b_next;
-        B = b_next;
+        next_state();
     }
-
-    print_board();
-    print_state();
-
-    getchar();
-
-    printf("------------------------------\n");
-    B = B->prev->prev->prev;
-    print_board();
-    print_state();
-    printf("------------------------------\n");
 
     return 0;
 }
