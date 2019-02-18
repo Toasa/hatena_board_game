@@ -312,11 +312,16 @@ int min_max_simple() {
         int pos = legal_moves[i+1];
 
         push_pos(pos);
+        val += B->piece[B->selecter_pos];
+
         if (is_gameover()) {
+            if (val > val_MAX) {
+                val_MAX = val;
+                ret_pos = pos;
+            }
             pop();
             continue;
         }
-        val += B->piece[B->selecter_pos];
 
         int pos_0 = get_imm_opt_move();
         val -= B->piece[pos_0];
