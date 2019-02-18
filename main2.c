@@ -300,7 +300,6 @@ int get_imm_opt_move() {
     return ret;
 }
 
-// うまくいってない(終盤の扱い)
 int min_max_simple() {
     int ret_pos;
 
@@ -312,9 +311,16 @@ int min_max_simple() {
         int pos = legal_moves[i+1];
 
         push_pos(pos);
+
         val += B->piece[B->selecter_pos];
 
         if (is_gameover()) {
+            // if my move induces gameover and necessary win,
+            // terminate the GAME.
+            if (val + B->P1_point > B->P2_point) {
+                return pos;
+            }
+
             if (val > val_MAX) {
                 val_MAX = val;
                 ret_pos = pos;
