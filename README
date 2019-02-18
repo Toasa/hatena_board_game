@@ -1,6 +1,18 @@
 how to play
 
-This is 2 player game You and COM.
+This is 2 player game You(1P) and COM(2P).
+To get a number each other,
+and finally the player wins who have total-points(sum of the getting numbers) greater.
+
+There is only one rule when getting a number.
+When you are 1P then you have to choose a number which is horizontal position of selecter(printing X).
+Conversely 2P have to choose a vertical place number of selecter.
+After player get a number from one position, the selecter have to move that position.
+
+Here is one example.
+Current board state is below(initial state).
+The turn is 1p and selecter is in b3.
+Therefore you are able to move a3, c3, d3 or e3.
 
 
 +-------------------+
