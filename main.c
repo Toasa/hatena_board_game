@@ -300,6 +300,154 @@ int get_imm_opt_move() {
     return ret;
 }
 
+// incorrect!
+// int min_max(int depth, int *ret_pos) {
+//     if (depth == 0) {
+//         return (B->piece[B->selecter_pos]);
+//     }
+//     int *legal_moves = get_legal_moves();
+//     int legal_moves_num = legal_moves[0];
+//     if (legal_moves_num == 0) {
+//         // game over
+//         return (B->piece[B->selecter_pos]);
+//     }
+//     if (B->turn == P1_TURN) {
+//         // int max = -10000000;
+//         // for (int i = 0; i < legal_moves_num; i++) {
+//         //     int pos = legal_moves[i + 1];
+//         //     push_pos(pos);
+//         //     int val = min_max(depth - 1);
+//         //     pop();
+//         //     if (val > max) {
+//         //         max = val;
+//         //     }
+//         // }
+//         int pos = get_imm_opt_move();
+//         push_pos(pos);
+//         int val = min_max(depth - 1);
+//         pop();
+//         if (val > max) {
+//             max = val;
+//             *ret_pos = pos;
+//         }
+//         return max;
+//     } else {
+//         int min = 10000000;
+//         for (int i = 0; i < legal_moves_num; i++) {
+//             int pos = legal_moves[i + 1];
+//             push_pos(pos);
+//             int val = min_max(depth - 1);
+//             pop();
+//             if (val < min) {
+//                 min = val;
+//             }
+//         }
+//         return min;
+//     }
+// }
+
+// incorrect!
+int min_max_simple_better() {
+    int ret_pos;
+    int val_MAX = -10000000;
+
+    int P1_point_org_0 = B->P1_point;
+    int P2_point_org_0 = B->P2_point;
+
+    int *legal_moves_0 = get_legal_moves();
+    for (int i0 = 0; i0 < legal_moves_0[0]; i0++) {
+        int val = 0;
+        int pos_0 = legal_moves_0[i0+1];
+        B->P1_point = P1_point_org_0;
+        B->P2_point = P2_point_org_0;
+        push_pos(pos_0);
+
+        val += B->piece[pos_0];
+        B->P2_point += B->piece[pos_0];
+
+        if (is_gameover()) {
+            pop();
+            // if my move induces gameover and necessary win,
+            // terminate the GAME(early retire).
+            if (val + B->P2_point > B->P1_point) {
+                return pos_0;
+            }
+
+            if (val > val_MAX) {
+                val_MAX = val;
+                ret_pos = pos_0;
+            }
+            continue;
+        }
+
+        int pos_1 = get_imm_opt_move();
+        push_pos(pos_1);
+        val -= B->piece[pos_1];
+        B->P1_point += B->piece[pos_1];
+
+        if (is_gameover()) {
+            pop();
+            pop();
+            // if my move induces gameover and necessary win,
+            // terminate the GAME(early retire).
+            if (val + B->P2_point > B->P1_point) {
+                return pos_0;
+            }
+
+            if (val > val_MAX) {
+                val_MAX = val;
+                ret_pos = pos_0;
+            }
+            continue;
+        }
+
+        int P1_point_org_2 = B->P1_point;
+        int P2_point_org_2 = B->P2_point;
+        int *legal_moves_2 = get_legal_moves();
+        for (int i2 = 0; i2 < legal_moves_2[0]; i2++) {
+            int pos_2 = legal_moves_2[i2+1];
+            B->P1_point = P1_point_org_2;
+            B->P2_point = P2_point_org_2;
+            push_pos(pos_2);
+
+            val += B->piece[pos_2];
+            B->P2_point += B->piece[pos_2];
+
+            if (is_gameover()) {
+                pop();
+                // if my move induces gameover and necessary win,
+                // terminate the GAME(early retire).
+                if (val + B->P1_point > B->P2_point) {
+                    pop();
+                    pop();
+                    return pos_0;
+                }
+
+                if (val > val_MAX) {
+                    val_MAX = val;
+                    ret_pos = pos_0;
+                }
+                continue;
+            }
+
+            int pos_3 = get_imm_opt_move();
+            val -= B->piece[pos_3];
+            if (val > val_MAX) {
+                val_MAX = val;
+                ret_pos = pos_0;
+            }
+            pop();
+        }
+
+        pop();
+        pop();
+    }
+    B->P1_point = P1_point_org_0;
+    B->P2_point = P2_point_org_0;
+    return ret_pos;
+}
+
+// simple means not recursively
 int min_max_simple() {
     int ret_pos;
 
@@ -307,17 +455,16 @@ int min_max_simple() {
     int val_MAX = -10000;
     for (int i = 0; i < legal_moves[0]; i++) {
         int val = 0;
-
         int pos = legal_moves[i+1];
-
         push_pos(pos);
 
         val += B->piece[B->selecter_pos];
 
         if (is_gameover()) {
-            // if my move induces gameover and necessary win,
+            pop();
+            // if com move induces gameover and result necessary win,
             // terminate the GAME(early retire).
-            if (val + B->P1_point > B->P2_point) {
+            if (val + B->P2_point > B->P1_point) {
                 return pos;
             }
 
@@ -325,7 +472,6 @@ int min_max_simple() {
                 val_MAX = val;
                 ret_pos = pos;
             }
-            pop();
             continue;
         }
 
@@ -357,7 +503,8 @@ void next_state() {
         push_pos(m_pos);
     } else {
         //int com_move_pos = get_imm_opt_move();
-        int com_move_pos = min_max_simple();
+        //int com_move_pos = min_max_simple();
+        int com_move_pos = min_max_simple_better();
 
         char com_move[2];
         pos2move(com_move_pos, com_move);
@@ -380,7 +527,6 @@ int main() {
             print_result();
             break;
         }
-
         next_state();
     }
 
